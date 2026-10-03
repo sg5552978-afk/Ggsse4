@@ -34,10 +34,14 @@ jobs:
 
           Restart-Service -Name TermService -Force
 
-      - name: Create RDP User
+      - name: Disable Password Complexity and Create RDP User
         shell: cmd
         run: |
-          net user RDP P@ssw0rd32GbRdp! /add /y
+          secedit /export /cfg "$env:temp\cfg.ini"
+          powershell -Command "(Get-Content $env:temp\cfg.ini) -replace 'PasswordComplexity = 1', 'PasswordComplexity = 0' \vert{} Set-Content$env:temp\cfg.ini"
+          secedit /configure /db "$env:temp\cfg.sdb" /cfg "$env:temp\cfg.ini" /areas SECURITYPOLICY
+          
+          net user RDP RunnerRdp32Gb#2026 /add /y
           net localgroup Administrators RDP /add
           net localgroup "Remote Desktop Users" RDP /add
 
@@ -73,7 +77,7 @@ jobs:
           Write-Host "`n=== RDP ACCESS ==="
           Write-Host "Address: $env:TAILSCALE_IP"
           Write-Host "Username: RDP"
-          Write-Host "Password: P@ssw0rd32GbRdp!"
+          Write-Host "Password: RunnerRdp32Gb#2026"
           Write-Host "==================`n"
           
           while ($true) {

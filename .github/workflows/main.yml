@@ -35,15 +35,11 @@ jobs:
           Restart-Service -Name TermService -Force
 
       - name: Create RDP User
-        shell: powershell
+        shell: cmd
         run: |
-          $RdpPass = "A8#k" + [System.Guid]::NewGuid().ToString().Replace("-","").Substring(0,10) + "!"
-          
-          net user RDP $RdpPass /add /y
+          net user RDP RunnerRdp32Gb#2026 /add /y
           net localgroup Administrators RDP /add
           net localgroup "Remote Desktop Users" RDP /add
-          
-          echo "RDP_PASS=$RdpPass" >> $env:GITHUB_ENV
 
       - name: Install Tailscale
         shell: cmd
@@ -54,31 +50,38 @@ jobs:
 
       - name: Establish Tailscale Connection
         shell: powershell
+        env:
+          TS_KEY: ${{ secrets.TAILSCALE_AUTH_KEY }}
         run: |
-          & "$env:ProgramFiles\Tailscale\tailscale.exe" up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-runner-$env:GITHUB_RUN_ID$tsIP = $null$retries = 0
-          while (-not $tsIP -and$retries -lt 10) {
-              $tsIP = & "$env:ProgramFiles\Tailscale\tailscale.exe" ip -4
-              Start-Sleep -Seconds 5
-              $retries++
-          }
-          
-          if (-not $tsIP) {
-              Write-Error "Tailscale IP not assigned. Exiting."
+          if (-not $env:TS_KEY) {
+              Write-Error "ERRO: A secret TAILSCALE_AUTH_KEY nao existe no GitHub Secrets!"
               exit 1
           }
+
+          & "$env:ProgramFiles\Tailscale\tailscale.exe" up --authkey=$env:TS_KEY --hostname="gh-runner-$env:GITHUB_RUN_ID"
+          
+          Start-Sleep -Seconds 10
+          
+          $tsIP = & "$env:ProgramFiles\Tailscale\tailscale.exe" ip -4
+          if (-not $tsIP) {
+              Write-Error "ERRO: A sua Auth Key do Tailscale expirou ou e invalida. Gere uma nova no painel do Tailscale."
+              exit 1
+          }
+          
           echo "TAILSCALE_IP=$tsIP" >> $env:GITHUB_ENV
 
       - name: Maintain Connection
         shell: powershell
         run: |
-          Write-Host "`n=== RDP ACCESS ==="
-          Write-Host "Address: $env:TAILSCALE_IP"
-          Write-Host "Username: RDP"
-          Write-Host "Password: $env:RDP_PASS"
-          Write-Host "==================`n"
+          Write-Host "`n=========================================="
+          Write-Host "DADOS PARA CONECTAR NO RDP:"
+          Write-Host "IP / Endereco: $env:TAILSCALE_IP"
+          Write-Host "Usuario: RDP"
+          Write-Host "Senha: RunnerRdp32Gb#2026"
+          Write-Host "==========================================`n"
           
           while ($true) {
-              Write-Host "[$(Get-Date)] RDP Active - Use Ctrl+C in workflow to terminate"
+              Write-Host "[$(Get-Date)] PC Virtual Ativo e Conectado"
               Start-Sleep -Seconds 300
           }
           

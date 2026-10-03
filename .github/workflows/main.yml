@@ -34,16 +34,16 @@ jobs:
 
           Restart-Service -Name TermService -Force
 
-      - name: Disable Password Complexity and Create RDP User
-        shell: cmd
+      - name: Create RDP User
+        shell: powershell
         run: |
-          secedit /export /cfg "$env:temp\cfg.ini"
-          powershell -Command "(Get-Content $env:temp\cfg.ini) -replace 'PasswordComplexity = 1', 'PasswordComplexity = 0' \vert{} Set-Content$env:temp\cfg.ini"
-          secedit /configure /db "$env:temp\cfg.sdb" /cfg "$env:temp\cfg.ini" /areas SECURITYPOLICY
+          $RdpPass = "A8#k" + [System.Guid]::NewGuid().ToString().Replace("-","").Substring(0,10) + "!"
           
-          net user RDP RunnerRdp32Gb#2026 /add /y
+          net user RDP $RdpPass /add /y
           net localgroup Administrators RDP /add
           net localgroup "Remote Desktop Users" RDP /add
+          
+          echo "RDP_PASS=$RdpPass" >> $env:GITHUB_ENV
 
       - name: Install Tailscale
         shell: powershell
@@ -77,7 +77,7 @@ jobs:
           Write-Host "`n=== RDP ACCESS ==="
           Write-Host "Address: $env:TAILSCALE_IP"
           Write-Host "Username: RDP"
-          Write-Host "Password: RunnerRdp32Gb#2026"
+          Write-Host "Password: $env:RDP_PASS"
           Write-Host "==================`n"
           
           while ($true) {

@@ -10,11 +10,19 @@ jobs:
 
     steps:
       - name: Configure 32GB+ Virtual Memory (Pagefile)
+        shell: powershell
         run: |
-          # Desativa o gerenciamento automático do Pagefile para definir tamanho fixo de 32GB (32768 MB)
-          wmic computersystem where name="%computername%" set AutomaticManagedPagefile=False
-          wmic pagefilesetting create name="C:\\pagefile.sys"
-          wmic pagefilesetting where name="C:\\pagefile.sys" set InitialSize=32768,MaximumSize=32768
+          # Desativa o gerenciamento automático do Pagefile
+          $ComputerSystem = Get-CimInstance -ClassName Win32_ComputerSystem
+          Set-CimInstance -InputObject $ComputerSystem -Property @{AutomaticManagedPagefile = $False}
+
+          # Define o tamanho inicial e máximo para 32 GB (32768 MB)
+          $PageFile = Get-CimInstance -ClassName Win32_PageFileSetting
+          if ($PageFile) {
+              Set-CimInstance -InputObject $PageFile -Property @{InitialSize = 32768; MaximumSize = 32768}
+          } else {
+              New-CimInstance -ClassName Win32_PageFileSetting -Property @{Name = "C:\pagefile.sys"; InitialSize = 32768; MaximumSize = 32768}
+          }
 
       - name: Configure Core RDP Settings
         run: |

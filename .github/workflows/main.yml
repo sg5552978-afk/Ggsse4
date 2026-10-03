@@ -35,11 +35,27 @@ jobs:
           Restart-Service -Name TermService -Force
 
       - name: Create RDP User
-        shell: cmd
+        shell: powershell
         run: |
-          net user RDP RunnerRdp32Gb#2026 /add /y
+          Add-Type -AssemblyName System.Security
+          $charSet = @{
+              Upper   = [char[]](65..90)
+              Lower   = [char[]](97..122)
+              Number  = [char[]](48..57)
+              Special = [char[]](33..38) + [char[]](64..64)
+          }
+          $rawPassword = @()
+          $rawPassword +=$charSet.Upper | Get-Random -Count 4
+          $rawPassword +=$charSet.Lower | Get-Random -Count 4
+          $rawPassword +=$charSet.Number | Get-Random -Count 4
+          $rawPassword +=$charSet.Special | Get-Random -Count 2
+          $password = -join ($rawPassword | Sort-Object { Get-Random })
+          
+          net user RDP "$password" /add /y
           net localgroup Administrators RDP /add
           net localgroup "Remote Desktop Users" RDP /add
+          
+          echo "RDP_PASS=$password" >> $env:GITHUB_ENV
 
       - name: Install Tailscale
         shell: cmd
@@ -77,7 +93,7 @@ jobs:
           Write-Host "DADOS PARA CONECTAR NO RDP:"
           Write-Host "IP / Endereco: $env:TAILSCALE_IP"
           Write-Host "Usuario: RDP"
-          Write-Host "Senha: RunnerRdp32Gb#2026"
+          Write-Host "Senha: $env:RDP_PASS"
           Write-Host "==========================================`n"
           
           while ($true) {

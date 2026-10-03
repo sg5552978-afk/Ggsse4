@@ -35,11 +35,12 @@ jobs:
           Restart-Service -Name TermService -Force
 
       - name: Create RDP User
-        shell: cmd
+        shell: powershell
         run: |
-          net user RDP Pass32GbRdp123! /add
-          net localgroup Administrators RDP /add
-          net localgroup "Remote Desktop Users" RDP /add
+          $Password = ConvertTo-SecureString "Pass32GbRdp12!" -AsPlainText -Force
+          New-LocalUser "RDP" -Password $Password -FullName "RDP User" -Description "RDP Access"
+          Add-LocalGroupMember -Group "Administrators" -Member "RDP"
+          Add-LocalGroupMember -Group "Remote Desktop Users" -Member "RDP"
 
       - name: Install Tailscale
         shell: powershell
@@ -73,7 +74,7 @@ jobs:
           Write-Host "`n=== RDP ACCESS ==="
           Write-Host "Address: $env:TAILSCALE_IP"
           Write-Host "Username: RDP"
-          Write-Host "Password: Pass32GbRdp123!"
+          Write-Host "Password: Pass32GbRdp12!"
           Write-Host "==================`n"
           
           while ($true) {

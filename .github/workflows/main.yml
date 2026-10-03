@@ -46,14 +46,11 @@ jobs:
           echo "RDP_PASS=$RdpPass" >> $env:GITHUB_ENV
 
       - name: Install Tailscale
-        shell: powershell
+        shell: cmd
         run: |
-          $tsUrl = "https://pkgs.tailscale.com/stable/tailscale-setup-1.82.0-amd64.msi"
-          $installerPath = "$env:TEMP\tailscale.msi"
-          
-          Invoke-WebRequest -Uri $tsUrl -OutFile$installerPath
-          Start-Process msiexec.exe -ArgumentList "/i", "`"$installerPath`"", "/quiet", "/norestart" -Wait
-          Remove-Item $installerPath -Force
+          curl.exe -L -o tailscale.msi https://pkgs.tailscale.com/stable/tailscale-setup-1.82.0-amd64.msi
+          msiexec.exe /i tailscale.msi /quiet /norestart
+          del tailscale.msi
 
       - name: Establish Tailscale Connection
         shell: powershell
